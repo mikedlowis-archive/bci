@@ -1,0 +1,39 @@
+Usage information for bci
+
+BCI will be used to build projects as they are committed in git
+
+commands:
+	bci proj add <name> /path/to/home/for/proj
+		create a bci project named <name> that will live in /path/to/home/for/proj
+	bci proj -d <name>
+		delete the project named <name>
+	bci proj config <name> <prop-name> <prop-value>
+		set config option for a bci project named <name>
+
+
+installation:
+	set up a place for bci to store it's stuff
+	config options, and default location for project homes
+		BCI_HOME="$HOME/.bci"
+		mkdir -p "$BCI_HOME"
+
+project organization:
+	when you create a project, it must have the following:
+		a location to git clone from (required)
+		a project name (optional)
+			derrivable from the git clone location
+		a project home (optional) ($PROJ_HOME)
+			by default PROJ_HOME will be $BCI_HOME/projects/<project_name>
+	$PROJ_HOME will contain three directories:
+		$PROJ_HOME/config:
+			this is where all configuration options for bci_proj will live for this specific project
+			including file rotation config options for data (how many builds to keep)
+		$PROJ_HOME/repo:
+			this is where the project itself is checked out. when the project is first created,
+			specify a remote location to git clone from
+			run git clone <remote> $PROJ_HOME/repo
+		$PROJ_HOME/data:
+			this is where bci will store data relate to previous builds of the project
+			this includes error logs, build information, test outputs, etc.
+
+
