@@ -15,7 +15,7 @@ executing the following commands:
     $ BCI_HOME="$HOME/.bci"
     $ mkdir -p "$BCI_HOME"
 
-BCI scripts will install to $BCI_HOME/bin which should then be added toyour
+BCI scripts will install to $BCI\_HOME/bin which should then be added to your
 $PATH variable
 
 Using BCI
