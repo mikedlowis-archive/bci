@@ -2,36 +2,84 @@ Usage information for bci
 
 BCI will be used to build projects as they are committed in git
 
-commands:
-	bci proj add <name> /path/to/home/for/proj
-		create a bci project named <name> that will live in /path/to/home/for/proj
-	bci proj -d <name>
+general bci commands
+	bci help
+		display usage information
+commands to manage list of projects:
+	bci add <name> <git repository location>
+		create a bci project named <name> that will live in $BCI_HOME/projects/<name>
+		$ PROJ_HOME="$BCI_HOME/projects/<name>"
+		$ mkdir -p "$PROJ_HOME"
+		$ mkdir -p "$PROJ_HOME/data"
+		$ git clone <git repository location> $PROJ_HOME/repo
+		$ echo "# put any project specific bci configuration options in this file" >> "$PROJ_HOME/config"
+		$ echo "project successfully created at $PROJ_HOME"
+		$ read -p"how should the project be built? " BUILDCMD
+		$ echo "build_command=$BUILDCMD" >> "$PROJ_HOME/config"
+	bci del <name> 
 		delete the project named <name>
-	bci proj config <name> <prop-name> <prop-value>
-		set config option for a bci project named <name>
+		$ #todo: add a prompt (eventually using QBALL_YES_NO_PROMPT, or just a simple "Y/N")
+		$ rm -rf "$BCI_HOME/projects/<name>"
+	bci ls (TODO: [expression])
+		list all projects (TODO: that match an optional expression)
+		$ ls "$BCI_HOME/projects"
+commands to manage a specific project
+	bci update <name>
+		force a pull of the specified project
+		TODO: create an alias for this command, bci pull <name>
+		$ pushd "$BCI_HOME/projects/<name>/repo"
+		$ git pull
+		$ popd
+	bci build <name>
+		force a bulid of the specified project
+		note: this does not implicity update
+		$ pushd "$BCI_HOME/projects/<name>/repo"
+		$ #there needs to be a build command in the config file telling us how to actually build this fucker.
+	TODO: be nice if something like this were to exist at some point
+		bci config <name> <prop-name> <prop-value>
+			set config option for a bci project named <name>
+	TODO: introduce mechanism to make <name> implicit and thus optional
+		ideas:
+			specify a $BCI_PROJ_HOME env var
+			check if $(pwd) is a valid bci project home
+			sacrifice a goat
 
 
 installation:
-	set up a place for bci to store it's stuff
-	config options, and default location for project homes
+	config option required is $BCI_HOME
+	this is a place place for bci to store its config options, and default location for project homes
 		BCI_HOME="$HOME/.bci"
 		mkdir -p "$BCI_HOME"
-	BCI scripts and binaries will install to $BCI_HOME/bin
+	BCI scripts will install to $BCI_HOME/bin
 	which should be added to your $PATH variable
 
-project creation:
-	the only thing bci requires to create a new project is a location to git clone from
-	additionally, users may specify a project name and project home directory
-	if no name is given, bci will use the name of the git repository
-	if no project home is given, bci will default to $BCI_HOME/projects/<project_name>
 
-	information about all bci projects will be stored in $BCI_HOME/config
+bci configuration:
+	defaults that bci will use for all projects will be stored in $BCI_HOME/config
+	these can be overridden on a per-project basis by creating a project config file at $BCI_HOME/projects/config
+
+	config options include:
+		number of builds to keep in history
+	#code note:
+		config file syntax is like: CONFIG_OPTION="VALUE", which can be sourced from bash directly:
+		source $BCI_HOME/config
+		source_if_exists $BCI_HOME/PROJECT/config
+
+
+project creation:
+	the only thing BCI requires to create a new project is a location to git clone from
+	additionally, users may specify a project name
+	if no name is given, bci will use the name of the git repository
+	the project stuff will be stored at $BCI_HOME/projects/<project_name>
+	each project requires the user to specify a build command, stored in $BCI_HOME/projects/<project_name>/config
+	for example:
+		build_command="rake release"
+
 
 project organization:
 	$PROJ_HOME will contain three items:
 		$PROJ_HOME/config: (file)
 			this is where all configuration options for bci_proj will live for this specific project
-			including file rotation config options for data (how many builds to keep)
 		$PROJ_HOME/repo: (directory)
 			this is where the project itself is checked out. when the project is first created,
 			specify a remote location to git clone from
