@@ -34,7 +34,9 @@ commands to manage a specific project
 		force a bulid of the specified project
 		note: this does not implicity update
 		$ pushd "$BCI_HOME/projects/<name>/repo"
-		$ #there needs to be a build command in the config file telling us how to actually build this fucker.
+		$ source "$BCI_HOME/projects/<name>/config" #this must contain build_command=...
+		$ : ${build_command:?"don't know how to build this project"}
+		$ $(build_command)
 	TODO: be nice if something like this were to exist at some point
 		bci config <name> <prop-name> <prop-value>
 			set config option for a bci project named <name>
