@@ -1,0 +1,71 @@
+#!/bin/env bash
+
+BCI_HOME=$HOME/.bci
+
+function bci-usage(){
+cat << EOF
+Usage: bci [command] [options]
+
+Valid commands:
+    add    <name> <url>    Adds a project to bci
+    del    <name>          Deletes a project from bci
+    ls     <name>          Lists all projects
+    update <name>          Force a pull on the specified project
+    build  <name>          Force a build on the specified project
+EOF
+exit 1
+}
+
+function bci-add(){
+    local proj_name=$2
+    : ${proj_name:?"No project name provided."}
+    local proj_url=$3
+    : ${proj_name:?"No project url provided."}
+    local PROJ_HOME="$BCI_HOME/projects/$proj_name"
+    mkdir -p "$PROJ_HOME"
+    mkdir -p "$PROJ_HOME/data"
+    git clone $proj_url $PROJ_HOME/repo
+    echo "# put any project specific bci configuration options in this file" >> "$PROJ_HOME/config"
+    read -p"how should the project be built? " BUILDCMD
+    echo "build_command='$BUILDCMD'" >> "$PROJ_HOME/config"
+    echo "project successfully created at $PROJ_HOME"
+}
+
+function bci-del(){
+    local proj_name=$2
+    : ${proj_name:?"No project name provided."}
+    rm -rf "$BCI_HOME/projects/$proj_name"
+}
+
+function bci-ls(){
+    ls "$BCI_HOME/projects"
+}
+
+function bci-update(){
+    local proj_name=$2
+    : ${proj_name:?"No project name provided."}
+    pushd "$BCI_HOME/projects/$proj_name/repo"
+    git pull
+    popd
+}
+
+function bci-build(){
+    local proj_name=$2
+    : ${proj_name:?"No project name provided."}
+    pushd "$BCI_HOME/projects/$proj_name/repo"
+    source "$BCI_HOME/projects/$proj_name/config" #this must contain build_command=...
+    : ${build_command:?"don't know how to build this project"}
+    $build_command
+    popd
+}
+
+case "$1" in
+    add) bci-add $* ;;
+    del) bci-del $* ;;
+    ls) bci-ls $* ;;
+    update) bci-update $* ;;
+    build) bci-build $* ;;
+
+    help) bci-usage ;;
+    '') bci-usage ;;
+esac
