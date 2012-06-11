@@ -1,17 +1,27 @@
 #!/bin/env bash
 
-BCI_HOME=$HOME/.bci
+# If $BCI_HOME is not defined then set it to ~/.bci
+if [ -z "${VAR}" ]; then
+    BCI_HOME=$HOME/.bci
+fi
 
+#------------------------------------------------------------------------------
+# Main BCI Functions
+#------------------------------------------------------------------------------
+
+# Define our usage message for command line arguments
 function bci-usage(){
 cat << EOF
 Usage: bci [command] [options]
 
 Valid commands:
-    add    <name> <url>    Adds a project to bci
-    del    <name>          Deletes a project from bci
-    ls     <name>          Lists all projects
-    update <name>          Force a pull on the specified project
-    build  <name>          Force a build on the specified project
+    add     <name> <url>    Adds a project to bci
+    config  <name>          Opens the configuration file for a bci project
+    rm      <name>          Removes a project from bci
+    install <dir>           Installs bci to the desired location
+    ls      <name>          Lists all projects
+    update  <name>          Force a pull on the specified project
+    build   <name>          Force a build on the specified project
 EOF
 exit 1
 }
@@ -22,19 +32,65 @@ function bci-add(){
     local proj_url=$3
     : ${proj_name:?"No project url provided."}
     local PROJ_HOME="$BCI_HOME/projects/$proj_name"
-    mkdir -p "$PROJ_HOME"
+
+    # Create the directories
     mkdir -p "$PROJ_HOME/data"
-    git clone $proj_url $PROJ_HOME/repo
+    mkdir -p "$PROJ_HOME/logs"
+
+    # Configure the new project
     echo "# put any project specific bci configuration options in this file" >> "$PROJ_HOME/config"
     read -p"how should the project be built? " BUILDCMD
     echo "build_command='$BUILDCMD'" >> "$PROJ_HOME/config"
+    read -p"which branch should we build? " BRANCH
+    echo "vcs_branch='$BRANCH'" >> "$PROJ_HOME/config"
+    source $PROJ_HOME/config
+
+    # Checkout from VCS
+    git clone $proj_url $PROJ_HOME/repo
+    pushd $PROJ_HOME/repo
+    git checkout $vcs_branch
+    git submodule init
+    git submodule update
+
+    # Done
     echo "project successfully created at $PROJ_HOME"
+    popd
 }
 
-function bci-del(){
+function bci-config(){
+    local proj_name=$2
+    : ${proj_name:?"No project name provided."}
+    local config_file="$BCI_HOME/projects/$proj_name/config"
+    if [[ -f "$config_file" ]]; then
+        if [[ -z "$EDITOR" ]]; then
+            vim "$config_file"
+        else
+            $EDITOR "$config_file"
+        fi
+    else
+        echo "Could not find configuration file for project '$proj_name'"
+        exit 1
+    fi
+}
+
+function bci-rm(){
     local proj_name=$2
     : ${proj_name:?"No project name provided."}
     rm -rf "$BCI_HOME/projects/$proj_name"
+}
+
+function bci-install(){
+    local install_dir=$2
+    : ${install_dir:?"No install directory provided"}
+    if [[ -d "$install_dir" ]]; then
+        echo -n "Install directory already exists. "
+        echo "Please remove the directory before installing."
+    else
+        mkdir -p $install_dir/projects
+        mkdir -p $install_dir/bin
+        cat bci | sed -e "s|\(\s\s*BCI_HOME=\).*|\1'$install_dir'|" > $install_dir/bin/bci
+        echo "Installation complete. Please add '$install_dir/bin' to your PATH variable"
+    fi
 }
 
 function bci-ls(){
@@ -45,7 +101,13 @@ function bci-update(){
     local proj_name=$2
     : ${proj_name:?"No project name provided."}
     pushd "$BCI_HOME/projects/$proj_name/repo"
+    source "$BCI_HOME/projects/$proj_name/config" #this must contain build_command=...
+    : ${build_command:?"don't know how to build this project"}
+    : ${vcs_branch:?"don't know which branch to build"}
+    git checkout $vcs_branch
     git pull
+    git submodule init
+    git submodule update
     popd
 }
 
@@ -59,13 +121,36 @@ function bci-build(){
     popd
 }
 
-case "$1" in
-    add) bci-add $* ;;
-    del) bci-del $* ;;
-    ls) bci-ls $* ;;
-    update) bci-update $* ;;
-    build) bci-build $* ;;
+#------------------------------------------------------------------------------
+# Helper Functions
+#------------------------------------------------------------------------------
 
-    help) bci-usage ;;
-    '') bci-usage ;;
+function logrotate(){
+    local logfile=$1
+    : ${logfile:?"No log file provided."}
+    if [ -f $logfile ]; then
+        local timestamp=`date +%Y%m%d`
+        local newlogfile=$logfile.$timestamp
+        cp $logfile $newlogfile
+        cat /dev/null > $logfile
+        gzip -f -9 $newlogfile
+    fi
+}
+
+#------------------------------------------------------------------------------
+# Main Routing Section
+#------------------------------------------------------------------------------
+
+# Route our commands to the corresponding function
+case "$1" in
+    add)     bci-add $* ;;
+    config)  bci-config $* ;;
+    build)   bci-build $* ;;
+    help)    bci-usage $* ;;
+    install) bci-install $*;;
+    ls)      bci-ls $* ;;
+    rm)      bci-rm $* ;;
+    update)  bci-update $* ;;
+    *)       bci-usage $* ;;
 esac
+

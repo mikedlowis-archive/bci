@@ -4,18 +4,19 @@ BCI
 About This Project
 ----------------------------------------------
 
-A distributed continuous integration script written in bash script.
+A distributed continuous integration script written in the bash scripting
+language.
 
 Installation
 ----------------------------------------------
 
 BCI can be installed on any machine that has Bash and basic unix utilities by
-executing the following commands:
+executing the following command:
 
-    $ BCI_HOME="$HOME/.bci"
-    $ mkdir -p "$BCI_HOME"
+    $ chmod +x bci
+    $ ./bci install ~/.bci
 
-BCI scripts will install to $BCI\_HOME/bin which should then be added to your
+BCI scripts will install to $BCI\_HOME/bin which you should then add to your
 $PATH variable
 
 Using BCI
@@ -25,13 +26,13 @@ Using BCI
 
 The following command will add a project to the BCI projects directory.
 
-    $ bci add some_project git@github.com:some_user/some_project.git
+    $ bci add some_project https://github.com/some_user/some_project.git
 
-### Deleting a Project
+### Removing a Project
 
-The following command will delete a project from the BCI projects directory.
+The following command will remove a project from the BCI projects directory.
 
-    $ bci del some_project
+    $ bci rm some_project
 
 ### Listing Projects
 
