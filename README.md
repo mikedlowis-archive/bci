@@ -48,7 +48,7 @@ The following command will force a git pull on the selected BCI project.
 
 ### Forcing a Build
 
-The following command will force an execution of teh configured build command
+The following command will force an execution of the configured build command
 for the given project
 
     $ bci build some_project
